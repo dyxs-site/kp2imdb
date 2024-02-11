@@ -1,2 +1,1 @@
-# gostarter
-Template.
+В разработке.
