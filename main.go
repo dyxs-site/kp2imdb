@@ -4,12 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/oklookat/kp2imdb/cmd"
 	"github.com/oklookat/kp2imdb/export"
 	"github.com/oklookat/kp2imdb/imdb"
 	"github.com/schollz/progressbar/v3"
 )
-
-var _links export.LinkedData
 
 const (
 	_linksPath = "./links.json"
@@ -17,46 +16,57 @@ const (
 
 func main() {
 	if len(os.Args) != 2 {
-		println("Usage example: ./kp2imdb kpexportFile.json")
-
+		println("Usage example: ./kp2imdb kinopoisk.json")
+		println("More info at https://github.com/oklookat/kp2imdb")
+		os.Exit(0)
+		return
 	}
+	kpFile := os.Args[1]
 
 	links, err := export.LoadLinks(_linksPath)
 	chk(err)
-	_links = links
 
-	var imdbIds []string
-
-	exported, err := export.LoadKinopoisk("kp_1.json")
+	exported, err := export.LoadKinopoisk(kpFile)
 	chk(err)
 
+	stack := cmd.NewStack(50)
 	bar := progressbar.New(len(exported))
+	barUid := stack.AddAlwaysBottom("")
 	setBar := func(i int) {
 		bar.Add(1)
-		fmt.Printf("%s", bar.String())
+		stack.AlwaysBottom[barUid] = bar.String()
+		stack.Render()
 	}
 
+	var imdbIds []string
 	for i, ke := range exported {
-		println("SEARCH: " + ke.Parsed.Title)
-		imdbId, ok := _links[ke.ID]
+		imdbId, ok := links[ke.ID]
 		if ok {
-			println("ALREADY LINKED.")
+			// already linked.
 			imdbIds = append(imdbIds, imdbId)
-			setBar(i)
 			continue
 		}
+
+		searchMsg := func() string {
+			return fmt.Sprintf("%s (%d)", ke.Parsed.Title, ke.Parsed.Year)
+		}
+
+		searchUid := stack.Add("🔍 " + searchMsg() + " 🔍")
+		stack.Render()
 
 		imdbTitle, err := imdb.SearchTitle(ke.Parsed, ke.FromAltName)
 		chk(err)
 		if imdbTitle == nil {
-			fmt.Printf("NOT FOUND: %s (%d)\n", ke.Parsed.Title, ke.Parsed.Year)
+			stack.Stack[searchUid] = "❌ " + searchMsg() + " ❌"
+			stack.Render()
 			setBar(i)
 			continue
 		}
 
 		setBar(i)
 
-		fmt.Printf("BEST: %v\n", imdbTitle)
+		stack.Stack[searchUid] = fmt.Sprintf("✅ %s | %v ✅", searchMsg(), imdbTitle)
+		stack.Render()
 
 		imdbIds = append(imdbIds, imdbTitle.ID)
 		links[ke.ID] = imdbTitle.ID

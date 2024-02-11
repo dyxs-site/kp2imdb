@@ -13,12 +13,16 @@ var client = &http.Client{
 	Transport: &customTransport{http.DefaultTransport},
 }
 
+// todo? use
+// https://pkg.go.dev/github.com/grailbio/base/tsv#example-Reader
+// https://developer.imdb.com/non-commercial-datasets/
+// if title not found, then use api
+
 // Returns imdb id.
 func SearchTitle(cTitle text.CleanedTitle, bypassSimilarity bool) (*imdb.Title, error) {
 	searchTxt := fmt.Sprintf("%s (%d)", cTitle.Title, cTitle.Year)
-	println("IMDB SEARCH: " + searchTxt)
 
-	titles, err := imdb.SearchTitle(client, fmt.Sprintf("%s (%d)", cTitle.Title, cTitle.Year))
+	titles, err := imdb.SearchTitle(client, searchTxt)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +67,7 @@ func SearchTitle(cTitle text.CleanedTitle, bypassSimilarity bool) (*imdb.Title, 
 
 // IMDb deployed awswaf and denies requests using the default Go user-agent (Go-http-client/1.1).
 // For now it still allows requests from a browser user-agent. Remain respectful, no spam, etc.
-const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.0.0 Safari/537.36"
+const userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
 
 type customTransport struct {
 	http.RoundTripper
