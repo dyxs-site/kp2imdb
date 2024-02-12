@@ -1,27 +1,41 @@
 package main
 
 import (
+	"bufio"
+	"flag"
 	"fmt"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/oklookat/kp2imdb/cmd"
 	"github.com/oklookat/kp2imdb/export"
 	"github.com/oklookat/kp2imdb/imdb"
-	"github.com/schollz/progressbar/v3"
+
+	_ "embed"
 )
 
 const (
 	_linksPath = "./links.json"
 )
 
+var (
+	//go:embed HELP.txt
+	help string
+)
+
 func main() {
-	if len(os.Args) != 2 {
-		println("Usage example: ./kp2imdb kinopoisk.json")
-		println("More info at https://github.com/oklookat/kp2imdb")
+	var useManualLink bool
+	flag.BoolVar(&useManualLink, "m", false, "Вручную вводить IMDB id при ошибках или ненаходе тайтла.")
+	flag.Parse()
+
+	kpFile := flag.Arg(0)
+	if len(kpFile) == 0 {
+		println(help)
+		bufio.NewReader(os.Stdin).ReadString('\n')
 		os.Exit(0)
 		return
 	}
-	kpFile := os.Args[1]
 
 	links, err := export.LoadLinks(_linksPath)
 	chk(err)
@@ -30,16 +44,16 @@ func main() {
 	chk(err)
 
 	stack := cmd.NewStack(50)
-	bar := progressbar.New(len(exported))
 	barUid := stack.AddAlwaysBottom("")
 	setBar := func(i int) {
-		bar.Add(1)
-		stack.AlwaysBottom[barUid] = bar.String()
+		stack.AlwaysBottom[barUid] = fmt.Sprintf("\n⏳ %d/%d", i+1, len(exported))
 		stack.Render()
 	}
 
 	var imdbIds []string
 	for i, ke := range exported {
+		setBar(i)
+
 		imdbId, ok := links[ke.ID]
 		if ok {
 			// already linked.
@@ -47,35 +61,54 @@ func main() {
 			continue
 		}
 
-		searchMsg := func() string {
-			return fmt.Sprintf("%s (%d)", ke.Parsed.Title, ke.Parsed.Year)
+		saveId := func(kpId, imdbId string) {
+			imdbIds = append(imdbIds, imdbId)
+			links[kpId] = imdbId
+			err = export.SaveLinks(_linksPath, links)
+			chk(err)
 		}
 
-		searchUid := stack.Add("🔍 " + searchMsg() + " 🔍")
-		stack.Render()
-
-		imdbTitle, err := imdb.SearchTitle(ke.Parsed, ke.FromAltName)
-		chk(err)
-		if imdbTitle == nil {
-			stack.Stack[searchUid] = "❌ " + searchMsg() + " ❌"
+		var found bool
+		parsed := ke.ParsedName
+		for i := 0; i < 2; i++ {
+			searchMsg := func() string {
+				return fmt.Sprintf("%s (%d)", parsed.Title, parsed.Year)
+			}
+			searchUid := stack.Add("🔍 " + searchMsg())
 			stack.Render()
-			setBar(i)
-			continue
+
+			imdbTitle, err := imdb.SearchTitle(parsed, i == 1)
+
+			if err != nil {
+				stack.Add("⚠️  " + err.Error())
+				stack.Render()
+			}
+
+			if err != nil || imdbTitle == nil {
+				stack.Stack[searchUid] = "❌ " + searchMsg()
+				stack.Render()
+				if i == 0 && ke.ParsedAltName != nil {
+					parsed = *ke.ParsedAltName
+					continue
+				}
+				break
+			}
+
+			stack.Stack[searchUid] = fmt.Sprintf("✅ %s ||| %v", searchMsg(), imdbTitle)
+			stack.Render()
+			saveId(ke.ID, imdbTitle.ID)
+			found = true
+			break
 		}
 
-		setBar(i)
-
-		stack.Stack[searchUid] = fmt.Sprintf("✅ %s | %v ✅", searchMsg(), imdbTitle)
-		stack.Render()
-
-		imdbIds = append(imdbIds, imdbTitle.ID)
-		links[ke.ID] = imdbTitle.ID
-
-		err = export.SaveLinks(_linksPath, links)
-		chk(err)
+		if !found && useManualLink {
+			id, err := manualLink(&stack, &ke)
+			chk(err)
+			saveId(ke.ID, id)
+		}
 	}
 
-	err = export.SaveIds("ids.txt", imdbIds)
+	err = export.SaveIds(fmt.Sprintf("%d.txt", time.Now().Unix()), imdbIds)
 	chk(err)
 }
 
@@ -84,4 +117,16 @@ func chk(err error) {
 		println(err.Error())
 		panic(err)
 	}
+}
+
+func manualLink(st *cmd.Stack, ke *export.KpExport) (string, error) {
+	reader := bufio.NewReader(os.Stdin)
+	st.Add(fmt.Sprintf(`🟦 %s | %s 
+🟦 Paste IMDB id (example: tt6263850):`, ke.Name, ke.AltName))
+	st.Render()
+	id, err := reader.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(id), err
 }

@@ -11,7 +11,7 @@
       "request": "launch",
       "mode": "auto",
       "program": "${cwd}/main.go",
-      "args": ["./kp_1.json"]
+      "args": ["-m", "./kp2.json"]
     }
   ]
 }

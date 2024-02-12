@@ -13,13 +13,9 @@ var client = &http.Client{
 	Transport: &customTransport{http.DefaultTransport},
 }
 
-// todo? use
-// https://pkg.go.dev/github.com/grailbio/base/tsv#example-Reader
-// https://developer.imdb.com/non-commercial-datasets/
-// if title not found, then use api
-
 // Returns imdb id.
-func SearchTitle(cTitle text.CleanedTitle, bypassSimilarity bool) (*imdb.Title, error) {
+func SearchTitle(cTitle text.CleanedTitle,
+	sameLang bool) (*imdb.Title, error) {
 	searchTxt := fmt.Sprintf("%s (%d)", cTitle.Title, cTitle.Year)
 
 	titles, err := imdb.SearchTitle(client, searchTxt)
@@ -39,7 +35,7 @@ func SearchTitle(cTitle text.CleanedTitle, bypassSimilarity bool) (*imdb.Title, 
 		if alphaYear < -1 || alphaYear > 1 {
 			continue
 		}
-		if len(titles) > 1 {
+		if sameLang {
 			alphaTitleLen := len(t2.Name) - len(cTitle.Title)
 			if alphaTitleLen < -5 || alphaTitleLen > 5 {
 				continue
@@ -52,17 +48,7 @@ func SearchTitle(cTitle text.CleanedTitle, bypassSimilarity bool) (*imdb.Title, 
 		return nil, err
 	}
 
-	if bypassSimilarity {
-		return &titlesFiltered[0], err
-	}
-
-	tIdx := make([]string, len(titlesFiltered))
-	for i := range tIdx {
-		tIdx[i] = titles[i].Name
-	}
-	bestIdx := text.FindSimilar(cTitle.Title, tIdx)
-
-	return &titlesFiltered[bestIdx], err
+	return &titlesFiltered[0], err
 }
 
 // IMDb deployed awswaf and denies requests using the default Go user-agent (Go-http-client/1.1).

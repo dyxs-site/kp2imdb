@@ -3,6 +3,7 @@ package export
 import (
 	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/oklookat/kp2imdb/text"
 )
@@ -18,26 +19,27 @@ func LoadKinopoisk(path string) ([]KpExport, error) {
 		return nil, err
 	}
 	for i := range data {
-		data[i].FromAltName = true
-		cTitle, err := text.CleanTitle(data[i].AltName)
+		altTitle, err := text.CleanTitle(data[i].AltName)
 		if err != nil {
 			return nil, err
 		}
-		if len(cTitle.Title) == 0 {
-			cTitle.Title = data[i].Name
-			data[i].FromAltName = false
+		if len(altTitle.Title) != 0 {
+			data[i].ParsedAltName = altTitle
 		}
-		data[i].Parsed = *cTitle
+
+		data[i].ParsedName = text.CleanedTitle{
+			Title: strings.TrimSpace(data[i].Name),
+			Year:  altTitle.Year,
+		}
 	}
 	return data, err
 }
 
 type KpExport struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	AltName   string `json:"alt_name"`
-	DateAdded string `json:"date_added"`
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	AltName string `json:"alt_name"`
 
-	Parsed      text.CleanedTitle `json:"-"`
-	FromAltName bool              `json:"-"`
+	ParsedName    text.CleanedTitle  `json:"-"`
+	ParsedAltName *text.CleanedTitle `json:"-"`
 }
