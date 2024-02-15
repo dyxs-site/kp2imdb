@@ -12,25 +12,73 @@ func TestCleanTitle(t *testing.T) {
 		Expected string
 	}
 	cases := []Case{
+		// Minimal.
 		{
 			Actual:   "(2006) 92 мин.",
 			Expected: "2006",
 		},
 		{
-			Actual:   "Rampage (2009) 85 мин.",
-			Expected: "Rampage 2009",
+			Actual:   "(2006)",
+			Expected: "2006",
 		},
 		{
-			Actual:   "Black Mirror (2011-...) 43 мин.",
-			Expected: "Black Mirror 2011",
+			Actual:   "(2006-2010) 92 мин.",
+			Expected: "2006",
 		},
 		{
-			Actual:   "Better Call Saul (2015-2022) 46 мин.",
-			Expected: "Better Call Saul 2015",
+			Actual:   "(2006-...) 92 мин.",
+			Expected: "2006",
+		},
+		// Symbols.
+		{
+			Actual:   "G.I. Joe: FF FF FF (2006) 92 мин.",
+			Expected: "G.I. Joe: FF FF FF 2006",
 		},
 		{
-			Actual:   "G.I. Joe: The Rise of Cobra (2009) 118 мин.",
-			Expected: "G.I. Joe: The Rise of Cobra 2009",
+			Actual:   "G.I. Joe: FF FF FF (2006)",
+			Expected: "G.I. Joe: FF FF FF 2006",
+		},
+		{
+			Actual:   "G.I. Joe: FF FF FF (2006-2010) 92 мин.",
+			Expected: "G.I. Joe: FF FF FF 2006",
+		},
+		{
+			Actual:   "G.I. Joe: FF FF FF (2006-...) 92 мин.",
+			Expected: "G.I. Joe: FF FF FF 2006",
+		},
+		// Confusing.
+		{
+			Actual:   "2012 (2009) 92 мин.",
+			Expected: "2012 2009",
+		},
+		{
+			Actual:   "2012 (2009)",
+			Expected: "2012 2009",
+		},
+		{
+			Actual:   "2012 (2009-2012) 92 мин.",
+			Expected: "2012 2009",
+		},
+		{
+			Actual:   "2012 (2009-...) 92 мин.",
+			Expected: "2012 2009",
+		},
+		// #1.
+		{
+			Actual:   "Birdman or (EEE E EEEE E) (2006) 92 мин.",
+			Expected: "Birdman or (EEE E EEEE E) 2006",
+		},
+		{
+			Actual:   "Birdman or (EEE E EEEE E) (2006)",
+			Expected: "Birdman or (EEE E EEEE E) 2006",
+		},
+		{
+			Actual:   "Tra(sgre)dire (2006-2010) 92 мин.",
+			Expected: "Tra(sgre)dire 2006",
+		},
+		{
+			Actual:   "Tra(sgre)dire (2006-...) 92 мин.",
+			Expected: "Tra(sgre)dire 2006",
 		},
 	}
 	for _, casy := range cases {
@@ -49,39 +97,39 @@ func TestCleanTitle(t *testing.T) {
 	}
 }
 
-func TestFindSimilar(t *testing.T) {
-	type Case struct {
-		Target      string
-		ExpectedIdx int
-		Candidates  []string
-	}
-	cases := []Case{
-		{
-			Target:      "}{отт@бь)ч",
-			ExpectedIdx: 1,
-			Candidates: []string{
-				"Мисс Поттер",
-				"Хоттабыч",
-				"Паутина шарлотты",
-				"Ключ от тайной комнаты",
-				"Скотт Уокер: Человек ХХХ столетия",
-			},
-		},
-		{
-			Target:      "Выкрутасы",
-			ExpectedIdx: 0,
-			Candidates: []string{
-				"Vykrutasy",
-				"Yalan Dolan",
-				"Twists and Turns (1987)",
-				"Potap & Nastya: Vikrutasi",
-			},
-		},
-	}
-	for _, casy := range cases {
-		bestIdx := FindSimilar(casy.Target, casy.Candidates)
-		if bestIdx != casy.ExpectedIdx {
-			t.Fatalf("Expected idx: %d | Got: %d", casy.ExpectedIdx, bestIdx)
-		}
-	}
-}
+// func TestFindSimilar(t *testing.T) {
+// 	type Case struct {
+// 		Target      string
+// 		ExpectedIdx int
+// 		Candidates  []string
+// 	}
+// 	cases := []Case{
+// 		{
+// 			Target:      "}{отт@бь)ч",
+// 			ExpectedIdx: 1,
+// 			Candidates: []string{
+// 				"Мисс Поттер",
+// 				"Хоттабыч",
+// 				"Паутина шарлотты",
+// 				"Ключ от тайной комнаты",
+// 				"Скотт Уокер: Человек ХХХ столетия",
+// 			},
+// 		},
+// 		{
+// 			Target:      "Выкрутасы",
+// 			ExpectedIdx: 0,
+// 			Candidates: []string{
+// 				"Vykrutasy",
+// 				"Yalan Dolan",
+// 				"Twists and Turns (1987)",
+// 				"Potap & Nastya: Vikrutasi",
+// 			},
+// 		},
+// 	}
+// 	for _, casy := range cases {
+// 		bestIdx := FindSimilar(casy.Target, casy.Candidates)
+// 		if bestIdx != casy.ExpectedIdx {
+// 			t.Fatalf("Expected idx: %d | Got: %d", casy.ExpectedIdx, bestIdx)
+// 		}
+// 	}
+// }

@@ -113,16 +113,24 @@ func main() {
 }
 
 func chk(err error) {
-	if err != nil {
-		println(err.Error())
-		panic(err)
+	if err == nil {
+		return
 	}
+	println("Ошибка: " + err.Error())
+	println(`Возможные решения:
+1. Убедитесь что у вас есть интернет.
+2. Проверьте свой JSON файл.
+3. Проверьте права доступа (links.json, создание файлов в текущей директории).
+4. Проверьте links.json или удалите его.
+Или опишите проблему тут: https://github.com/oklookat/kp2imdb/issues
+`)
+	bufio.NewReader(os.Stdin).ReadString('\n')
 }
 
 func manualLink(st *cmd.Stack, ke *export.KpExport) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
-	st.Add(fmt.Sprintf(`🟦 %s | %s 
-🟦 Paste IMDB id (example: tt6263850):`, ke.Name, ke.AltName))
+	st.Add(fmt.Sprintf(`🟦 Не найдено: %s | %s
+🟦 Вставьте IMDB ID (например: tt6263850):`, ke.Name, ke.AltName))
 	st.Render()
 	id, err := reader.ReadString('\n')
 	if err != nil {

@@ -10,8 +10,8 @@
       "type": "go",
       "request": "launch",
       "mode": "auto",
-      "program": "${cwd}/main.go",
-      "args": ["-m", "./kp2.json"]
+      "program": "${cwd}/main.go"
+      // "args": ["-m", "./kp2.json"]
     }
   ]
 }
