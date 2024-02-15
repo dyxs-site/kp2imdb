@@ -125,6 +125,7 @@ func chk(err error) {
 Или опишите проблему тут: https://github.com/oklookat/kp2imdb/issues
 `)
 	bufio.NewReader(os.Stdin).ReadString('\n')
+	os.Exit(1)
 }
 
 func manualLink(st *cmd.Stack, ke *export.KpExport) (string, error) {
