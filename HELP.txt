@@ -1,4 +1,4 @@
-kp2imdb v1.0.1
+kp2imdb v1.0.2
 https://github.com/oklookat/kp2imdb
 https://donationalerts.com/r/oklookat
 https://boosty.to/oklookat/donate
