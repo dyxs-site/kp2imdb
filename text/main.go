@@ -1,6 +1,7 @@
 package text
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -37,6 +38,7 @@ func CleanTitle(title string) (*CleanedTitle, error) {
 
 	titleName := strings.Join(titleS[:yearInfoCutIdx], " ")
 	yearInfo := titleS[yearInfoCutIdx:]
+
 	res, err := parseYear(yearInfo[0])
 	if err != nil {
 		return nil, fmt.Errorf("%w, %w", errWrongTitle(title), err)
@@ -56,6 +58,9 @@ func parseYear(year string) (int, error) {
 	yearS = strings.TrimSuffix(yearS, ")")
 	// [2006, 2010?]
 	yearSP := strings.Split(yearS, "-")
+	if len(yearSP) == 0 {
+		return 0, errors.New("parseYear: empty yearSP")
+	}
 	return strconv.Atoi(yearSP[0])
 }
 
